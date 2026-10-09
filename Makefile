@@ -1,4 +1,4 @@
-.PHONY: help install lint typecheck test format synth precommit check deploy-kb ingest query teardown-kb
+.PHONY: help install lint typecheck test format synth precommit check deploy-kb ingest query teardown-kb build-lambda schemas deploy-tools invoke-tools
 
 help:  ## List targets
 	@grep -E "^[a-z-]+:.*##" $(MAKEFILE_LIST) | sed -E "s/:.*## /\t/"
@@ -14,15 +14,27 @@ lint:  ## Ruff lint and format check
 typecheck:  ## mypy (strict)
 	uv run mypy
 
-test:  ## pytest
-	uv run pytest
+test:  ## pytest, with coverage gate (>= 80%) on tools/
+	uv run pytest --cov=tools --cov-report=term --cov-fail-under=80
 
 format:  ## Auto-fix lint issues and format
 	uv run ruff check --fix .
 	uv run ruff format .
 
-synth:  ## cdk synth (needs Node; no AWS credentials)
+synth: build-lambda  ## cdk synth (needs Node; no AWS credentials)
 	cd infra && npx --yes aws-cdk@2 synth --quiet
+
+build-lambda:  ## Build the tool Lambda bundle in build/lambda (no Docker)
+	uv run python scripts/build_lambda.py
+
+schemas:  ## Regenerate tools/schemas/*.openapi.json from the tool models
+	uv run python scripts/gen_tool_schemas.py
+
+deploy-tools: build-lambda  ## Deploy the Tools stack (creates AWS resources)
+	cd infra && npx --yes aws-cdk@2 deploy Ira-$${IRA_STAGE:-dev}-Tools --exclusively --require-approval never
+
+invoke-tools:  ## Invoke every deployed tool Lambda with sample payloads
+	uv run python scripts/invoke_tools.py
 
 deploy-kb:  ## Deploy the KnowledgeBase stack (creates AWS resources)
 	cd infra && npx --yes aws-cdk@2 deploy Ira-$${IRA_STAGE:-dev}-KnowledgeBase --exclusively --require-approval never

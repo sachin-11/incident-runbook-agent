@@ -1,22 +1,35 @@
 import json
+import tempfile
+from pathlib import Path
 
 import pytest
 from aws_cdk import App
 from aws_cdk.assertions import Match, Template
 
-from agent.config import KbSettings
+from agent.config import InfraSettings
 from app import build_app
 from stacks.chunking import load_chunking
 
-SETTINGS = KbSettings(
+SETTINGS = InfraSettings(
     aws_region="us-east-1",
     embedding_model_id="amazon.titan-embed-text-v2:0",
     embedding_dimensions=1024,
 )
 
 
+def _make_bundle() -> Path:
+    """A stand-in for build/lambda so infra tests do not need the real bundle."""
+    path = Path(tempfile.mkdtemp(prefix="ira-bundle-"))
+    (path / "tools").mkdir()
+    (path / "tools" / "__init__.py").write_text("", encoding="utf-8")
+    return path
+
+
+BUNDLE = _make_bundle()
+
+
 def _app(**context: str) -> App:
-    return build_app(App(context=context), SETTINGS)
+    return build_app(App(context=context), SETTINGS, BUNDLE)
 
 
 def _stack_names(app: App) -> set[str]:
@@ -132,3 +145,77 @@ def test_kb_role_is_scoped_to_model_and_index():
 def test_kb_outputs_for_scripts():
     outputs = _kb_template().find_outputs("*")
     assert {"KnowledgeBaseId", "DataSourceId", "DocsBucketName", "DocsPrefix"} <= set(outputs)
+
+
+def test_missing_lambda_bundle_fails_with_hint(tmp_path):
+    with pytest.raises(FileNotFoundError, match=r"build_lambda\.py"):
+        build_app(App(), SETTINGS, tmp_path / "nope")
+
+
+def _tools_template() -> Template:
+    return Template.from_stack(_app().node.find_child("Ira-dev-Tools"))  # type: ignore[arg-type]
+
+
+def test_tools_stack_has_one_arm64_function_per_tool():
+    t = _tools_template()
+    t.resource_count_is("AWS::Lambda::Function", 5)
+    for name in ("get-logs", "get-service-health", "get-recent-deploys", "get-metrics"):
+        t.has_resource_properties(
+            "AWS::Lambda::Function",
+            {
+                "FunctionName": f"ira-dev-{name}",
+                "Runtime": "python3.12",
+                "Architectures": ["arm64"],
+                "Timeout": 10,
+                "Environment": {
+                    "Variables": Match.not_(Match.object_like({"AUDIT_TABLE": Match.any_value()}))
+                },
+            },
+        )
+    t.has_resource_properties(
+        "AWS::Lambda::Function",
+        {
+            "FunctionName": "ira-dev-restart-service",
+            "Handler": "tools.restart_service.handler.handler",
+            "Environment": {
+                "Variables": Match.object_like(
+                    {"AUDIT_TABLE": Match.any_value(), "APPROVAL_SECRET_ARN": Match.any_value()}
+                )
+            },
+        },
+    )
+
+
+def test_tools_have_log_retention_and_audit_table():
+    t = _tools_template()
+    t.resource_count_is("AWS::Logs::LogGroup", 5)
+    t.all_resources_properties("AWS::Logs::LogGroup", {"RetentionInDays": 14})
+    t.has_resource_properties(
+        "AWS::DynamoDB::Table",
+        {
+            "KeySchema": [{"AttributeName": "pk", "KeyType": "HASH"}],
+            "BillingMode": "PAY_PER_REQUEST",
+        },
+    )
+
+
+def test_only_restart_service_can_touch_audit_table_and_secret():
+    t = _tools_template()
+    policies = t.find_resources("AWS::IAM::Policy")
+    dynamo = [p for p in policies.values() if "dynamodb" in json.dumps(p)]
+    secrets = [p for p in policies.values() if "secretsmanager" in json.dumps(p)]
+    assert len(dynamo) == len(secrets) == 1
+    assert dynamo[0] is secrets[0]
+    statements = json.dumps(dynamo[0])
+    for forbidden in ("dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Scan", "dynamodb:*"):
+        assert forbidden not in statements
+    # No role gets the wildcard managed basic-execution policy.
+    for role in t.find_resources("AWS::IAM::Role").values():
+        assert "ManagedPolicyArns" not in role["Properties"]
+
+
+def test_every_log_policy_is_scoped_to_its_own_log_group():
+    for policy in _tools_template().find_resources("AWS::IAM::Policy").values():
+        for stmt in policy["Properties"]["PolicyDocument"]["Statement"]:
+            if "logs:PutLogEvents" in stmt["Action"]:
+                assert "*" not in json.dumps(stmt["Resource"]).replace(":*", "")

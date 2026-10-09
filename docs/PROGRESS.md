@@ -3,6 +3,86 @@
 > This project applies production-grade practices, but they are validated only on a simulated
 > environment. It has not been proven in production.
 
+## Module 3: Tools (done, 2026-10-09)
+
+### Done
+- **Simulator** (`tools/sim/`): a healthy baseline plus 5 scenarios (`healthy`,
+  `crashloop_after_deploy`, `db_pool_exhaustion`, `memory_leak`, `log_injection`). It is
+  deterministic for a given clock and stores times as minutes-ago, so every scenario looks live.
+- **5 Lambdas**, one folder and handler each, with pydantic input and output, a shared handler
+  wrapper (validation, error envelope, a JSON `tool_result` log with `request_id`, `trace_id` and
+  latency) and a 10 s timeout from `IRA_TOOL_TIMEOUT_S`: `get_logs`, `get_service_health`,
+  `get_recent_deploys`, `get_metrics` and `restart_service`.
+- **restart_service:**
+  - Requires an HMAC-SHA256 approval token. The token is bound to the service and action, lasts
+    at most 1 h, and its key is in Secrets Manager.
+  - Single use: the token's `jti` and the `request_id` are claimed in one DynamoDB transaction.
+  - Idempotent per `request_id`, with an `idempotency_conflict` error if the input changes.
+  - Every attempt is written to an append-only audit table.
+  - Supports `dry_run`.
+- **Sanitizer** (`tools/common/sanitize.py`): strips ANSI, control and invisible/bidi
+  characters, caps the length per field and per response (8 KB for logs), and flags 5 classes of
+  instruction-like text. Every read tool uses it.
+- **OpenAPI 3.1** per action group (`tools/schemas/diagnostics|remediation.openapi.json`),
+  generated from the models. Tests validate the specs, check them for drift, and validate real
+  tool output against them. `scenario_id` is hidden from the input schemas.
+- **ToolsStack:** 5 arm64 Python 3.12 functions and one role per function, each scoped to
+  `logs:CreateLogStream` and `PutLogEvents` on its own log group (no managed wildcard policy).
+  Log groups keep 14 days. Only `restart_service` can read the secret and PutItem/GetItem the
+  audit table (no Update, Delete or Scan). The audit table is on-demand, with RETAIN and PITR in
+  prod.
+- **Packaging without Docker:** `scripts/build_lambda.py` installs pydantic as manylinux arm64
+  wheels (pinned to uv.lock) plus `tools/` and `observability/` into `build/lambda` (7 MB).
+  `make synth` and `deploy-tools` build it first.
+- **Scripts:** `invoke_tools.py` (calls each Lambda) and `issue_approval_token.py` (the human
+  approval step for now). The logger now writes to the current stdout, so redirection and test
+  capture work.
+- `KbSettings` was renamed `InfraSettings` and gained `tool_timeout_s` and `sim_scenario_id`.
+
+### Acceptance checks (2026-10-09, ap-south-1)
+- pytest: **198 passed**. Coverage on `tools/` is **99.5%** and `make test` enforces at least 80%.
+- `cdk deploy Ira-dev-Tools`: succeeded in 56 s. Outputs: `ira-dev-get-logs`,
+  `ira-dev-get-service-health`, `ira-dev-get-recent-deploys`, `ira-dev-get-metrics`,
+  `ira-dev-restart-service`, plus the audit table and the approval secret ARN.
+- `scripts/invoke_tools.py`: all 10 invocations gave the expected result (5 read samples and 5
+  restart steps). CloudWatch shows JSON `tool_result` lines with the Lambda request id and the
+  X-Ray trace id. The audit table holds 5 `evt`, 1 `req` and 1 `tok` items.
+- restart_service **without a token is rejected**:
+  `{"status": "rejected", "reason_code": "missing_token", "message": "restart_service requires an
+  approval_token from a human.", "audit_event_id": "2fe854cc..."}`. Replaying a token for a new
+  request returns `token_replayed`. Repeating the same request returns `idempotent_replay: true`.
+
+### Decisions
+- **Lambda event = plain tool arguments.** That is what AgentCore Gateway Lambda targets send (we
+  are not using Bedrock Agents' action-group event format). It is also what a direct invoke sends.
+- **OpenAPI 3.1, not 3.0**, because it matches pydantic's JSON Schema output, so no hand-written
+  schema is needed. The Gateway tool schema is derived in the agent module.
+  `x-requireConfirmation` is only a hint. Enforcement comes from the token, and later from
+  AgentCore Policy.
+- **Claim before acting.** The request and the token are written atomically before the
+  (simulated) restart, so one approval can never cause two restarts.
+- **Dry run does not use up the token**, so a human can preview and then approve the same token.
+- **Secrets Manager for the HMAC key** (about $0.40/month). An SSM SecureString can't be created
+  by CloudFormation, and a KMS HMAC key costs $1/month.
+- **arm64 + a single bundle.** It is cheaper per ms, and one asset covers 5 functions.
+
+### Cost (dev, idle to light use)
+- About **$0.40/month**, mostly the Secrets Manager secret. Lambda, DynamoDB on-demand and the
+  logs fall within the free tier at demo volumes.
+
+### Known gaps
+- The simulated restart does not change the simulator's state. Module 8 adds real chaos.
+- Tokens are issued by a script with the developer's credentials. The approval flow and AgentCore
+  Policy come in the agent module, and the Gateway invoke permissions arrive with the Gateway.
+- The sanitizer is regex based. It catches common injection phrasing, not every phrasing.
+  Defense in depth: the agent prompt treats tool output as data, and Policy blocks risky calls
+  without approval.
+- No reserved concurrency (a new account may have a low concurrency limit) and no active X-Ray
+  tracing yet; both come in the observability module.
+
+### Next
+- Module 2 still needs ingestion and the query checks once the Bedrock quota is raised.
+
 ## Module 2: Knowledge Base (blocked on a Bedrock quota, 2026-10-09)
 
 ### Done

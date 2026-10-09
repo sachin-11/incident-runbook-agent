@@ -1,0 +1,44 @@
+{
+  "id": "db_pool_exhaustion",
+  "description": "checkout-api pool size raised to 50 per pod; HPA scaled to 14 pods, total demand exceeds Postgres max_connections (500).",
+  "services": {
+    "checkout-api": {
+      "health": {
+        "status": "degraded",
+        "ready_replicas": 14,
+        "desired_replicas": 14,
+        "checks": [
+          {"name": "readiness", "status": "passing"},
+          {"name": "dependency:orders-db", "status": "failing", "detail": "connection acquire timeouts"}
+        ],
+        "notes": "HPA scaled 6 -> 14 replicas 30 minutes ago"
+      },
+      "deploys": [
+        {"version": "4.12.0", "minutes_ago": 215, "author": "ci-bot", "summary": "Raise DB_POOL_MAX 20 -> 50; checkout refactor", "status": "succeeded"},
+        {"version": "4.11.3", "minutes_ago": 4320, "author": "ci-bot", "summary": "Fix coupon rounding", "status": "succeeded"}
+      ],
+      "logs": [
+        {"minutes_ago": 9, "level": "WARN", "message": "HikariPool-1 - Connection is not available, request timed out after 30000ms"},
+        {"minutes_ago": 7, "level": "ERROR", "message": "FATAL: sorry, too many clients already"},
+        {"minutes_ago": 4, "level": "ERROR", "message": "POST /checkout 500 - could not acquire DB connection"},
+        {"minutes_ago": 1, "level": "ERROR", "message": "FATAL: remaining connection slots are reserved for non-replication superuser connections"}
+      ],
+      "metrics": {
+        "db_connections": {"since_minutes_ago": 10, "value": 500},
+        "error_rate": {"since_minutes_ago": 9, "value": 41.0},
+        "p99_latency_ms": {"since_minutes_ago": 9, "value": 30000},
+        "rps": {"since_minutes_ago": 30, "value": 310, "shape": "ramp"}
+      }
+    },
+    "orders-worker": {
+      "health": {
+        "status": "degraded",
+        "checks": [{"name": "dependency:orders-db", "status": "failing", "detail": "too many clients"}]
+      },
+      "logs": [
+        {"minutes_ago": 6, "level": "ERROR", "message": "psycopg.OperationalError: FATAL: sorry, too many clients already"}
+      ],
+      "metrics": {"queue_age_s": {"since_minutes_ago": 8, "value": 900, "shape": "ramp"}}
+    }
+  }
+}

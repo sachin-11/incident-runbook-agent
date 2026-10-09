@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any
 
 from botocore.exceptions import ClientError
 
-from agent.config import load_kb_settings
+from agent.config import load_infra_settings
 from observability.logging import get_logger, log_context
 from scripts.kb_common import KbStackOutputs, client, kb_stack_name, load_stack_outputs
 
@@ -148,7 +148,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    settings = load_kb_settings()
+    settings = load_infra_settings()
     with log_context(stage=settings.stage):
         out = load_stack_outputs(client(settings, "cloudformation"), kb_stack_name(settings.stage))
         plan = sync(

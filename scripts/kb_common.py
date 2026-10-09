@@ -1,4 +1,4 @@
-"""Shared helpers for the KB scripts: stack naming, stack outputs, boto3 clients."""
+"""Shared helpers for the ops scripts: stack naming, stack outputs, boto3 clients."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import boto3
 from botocore.config import Config
 from pydantic import BaseModel
 
-from agent.config import KbSettings
+from agent.config import InfraSettings
 
 if TYPE_CHECKING:
     from mypy_boto3_cloudformation import CloudFormationClient
@@ -27,16 +27,20 @@ def kb_stack_name(stage: str) -> str:
     return f"Ira-{stage}-KnowledgeBase"
 
 
-def client(settings: KbSettings, service: str) -> Any:
+def client(settings: InfraSettings, service: str) -> Any:
     # The service name is a runtime value, so the typed per-service overloads cannot match.
     return boto3.client(  # type: ignore[call-overload]
         service, region_name=settings.aws_region, config=BOTO_CONFIG
     )
 
 
-def load_stack_outputs(cfn: CloudFormationClient, stack_name: str) -> KbStackOutputs:
+def stack_outputs(cfn: CloudFormationClient, stack_name: str) -> dict[str, str]:
     stack = cfn.describe_stacks(StackName=stack_name)["Stacks"][0]
-    outputs = {o["OutputKey"]: o["OutputValue"] for o in stack.get("Outputs", [])}
+    return {o["OutputKey"]: o["OutputValue"] for o in stack.get("Outputs", [])}
+
+
+def load_stack_outputs(cfn: CloudFormationClient, stack_name: str) -> KbStackOutputs:
+    outputs = stack_outputs(cfn, stack_name)
     return KbStackOutputs(
         knowledge_base_id=outputs["KnowledgeBaseId"],
         data_source_id=outputs["DataSourceId"],

@@ -17,7 +17,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from agent.config import load_kb_settings
+from agent.config import load_infra_settings
 from scripts.kb_common import client, kb_stack_name, load_stack_outputs
 
 INDENT = "    "
@@ -106,7 +106,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", action="store_true", help="print hits as JSON")
     args = parser.parse_args(argv)
 
-    settings = load_kb_settings()
+    settings = load_infra_settings()
     kb_id = (
         settings.knowledge_base_id
         or load_stack_outputs(

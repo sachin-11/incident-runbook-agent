@@ -1,7 +1,7 @@
 # Architecture
 
-> Status after Module 2: settings, logging, CI and the Knowledge Base stack are built. The KB is
-> deployed in ap-south-1, but ingestion is blocked by the account's Bedrock throttling.
+> Status after Module 3: settings, logging, CI, the Knowledge Base stack and the Tools stack are
+> built and deployed in ap-south-1. KB ingestion is blocked by the account's Bedrock throttling.
 > Everything marked *(planned)* is the target design. Since 2026-10-09 the agent layer targets
 > **Amazon Bedrock AgentCore** instead of Bedrock Agents. This diagram is updated each module.
 
@@ -23,7 +23,7 @@
  |                         |  allowed, writes need      state-changing tool             |
  |                         |  an approval                                               |
  |                         v                                                           |
- |                    ToolsStack Lambdas (logs, health, deploys, metrics; timeouts)    |
+ |       ToolsStack Lambdas: logs, health, deploys, metrics, restart (token + audit)   |
  +-------------------------------------------------------------------------------------+
        ^
   kb/docs (runbooks + postmortems) -> S3 -> Titan v2 embeddings -> S3 Vectors index
@@ -42,7 +42,7 @@ All stack names are `Ira-<stage>-<Name>`, with stage `dev | staging | prod`.
 | Stack | Depends on | Holds | Status |
 |---|---|---|---|
 | `KnowledgeBaseStack` | - | Bedrock KB, S3 docs bucket, S3 Vectors bucket + index, data source | built, deployed (ap-south-1) |
-| `ToolsStack` | - | Diagnostic Lambdas | empty |
+| `ToolsStack` | - | 5 tool Lambdas (4 read-only + risky restart), audit table, approval signing key | built, deployed (ap-south-1) |
 | `AgentStack` | KB, Tools | AgentCore Runtime, Gateway + Lambda targets, Policy, Memory | empty |
 | `ObservabilityStack` | Agent | AgentCore Observability, dashboards, alarms, budgets | empty |
 

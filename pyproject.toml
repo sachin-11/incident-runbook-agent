@@ -15,7 +15,11 @@ dev = [
     "pytest>=8.3",
     "ruff>=0.6",
     "mypy>=1.11",
-    "boto3-stubs[bedrock,bedrock-agent,bedrock-agent-runtime,cloudformation,s3]>=1.40",
+    "boto3-stubs[bedrock,bedrock-agent,bedrock-agent-runtime,cloudformation,dynamodb,lambda,s3,secretsmanager]>=1.40",
+    "moto[dynamodb,secretsmanager]>=5.0",
+    "pytest-cov>=5.0",
+    "openapi-spec-validator>=0.7",
+    "jsonschema>=4.23",
     "types-pyyaml>=6.0",
     "pre-commit>=4.0",
 ]
@@ -57,10 +61,17 @@ strict = true
 plugins = ["pydantic.mypy"]
 files = ["agent", "tools", "observability", "scripts", "tests", "infra"]
 mypy_path = "infra"
+# CDK copies the Lambda bundle (with third-party packages) into cdk.out.
+exclude = ['cdk\.out/', '^build/']
 
 [[tool.mypy.overrides]]
 module = ["tests.*"]
 disallow_untyped_defs = false
+disallow_untyped_calls = false
+
+[[tool.mypy.overrides]]
+module = ["moto", "moto.*", "jsonschema", "jsonschema.*", "openapi_spec_validator"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

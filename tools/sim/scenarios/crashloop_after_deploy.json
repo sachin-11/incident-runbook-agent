@@ -1,0 +1,38 @@
+{
+  "id": "crashloop_after_deploy",
+  "description": "checkout-api 4.12.0 renamed ORDERS_DB_URL to DATABASE_URL without updating the Secret; new pods crashloop, rollout stuck, old pods carry the load.",
+  "services": {
+    "checkout-api": {
+      "health": {
+        "status": "degraded",
+        "ready_replicas": 2,
+        "desired_replicas": 3,
+        "checks": [
+          {"name": "readiness", "status": "failing", "detail": "1 of 3 pods not ready: checkout-api-7f9c-x2k4 CrashLoopBackOff (restarts: 7)"},
+          {"name": "liveness", "status": "passing", "detail": "old ReplicaSet pods healthy"},
+          {"name": "rollout", "status": "failing", "detail": "Waiting for rollout: 1 of 3 updated replicas are available"}
+        ],
+        "last_restart_minutes_ago": 1,
+        "notes": "Last State: Terminated, Reason: Error, Exit Code: 1"
+      },
+      "deploys": [
+        {"version": "4.12.0", "minutes_ago": 12, "author": "ci-bot (PR #1843 by dana)", "summary": "Refactor config loading; rename ORDERS_DB_URL -> DATABASE_URL", "status": "in_progress"},
+        {"version": "4.11.3", "minutes_ago": 4320, "author": "ci-bot", "summary": "Fix coupon rounding", "status": "succeeded"}
+      ],
+      "logs": [
+        {"minutes_ago": 11.5, "level": "INFO", "message": "Starting checkout-api 4.12.0"},
+        {"minutes_ago": 11.4, "level": "ERROR", "message": "ConfigError: required setting DATABASE_URL is missing"},
+        {"minutes_ago": 9, "level": "ERROR", "message": "ConfigError: required setting DATABASE_URL is missing"},
+        {"minutes_ago": 6, "level": "ERROR", "message": "ConfigError: required setting DATABASE_URL is missing"},
+        {"minutes_ago": 3, "level": "WARN", "message": "Back-off restarting failed container checkout-api in pod checkout-api-7f9c-x2k4"},
+        {"minutes_ago": 2, "level": "WARN", "message": "p99 latency 1.1s on remaining pods (2 of 3 serving)"},
+        {"minutes_ago": 1, "level": "ERROR", "message": "ConfigError: required setting DATABASE_URL is missing"}
+      ],
+      "metrics": {
+        "restarts": {"since_minutes_ago": 11, "value": 0.6},
+        "p99_latency_ms": {"since_minutes_ago": 11, "value": 1100, "shape": "ramp"},
+        "error_rate": {"since_minutes_ago": 11, "value": 1.8}
+      }
+    }
+  }
+}

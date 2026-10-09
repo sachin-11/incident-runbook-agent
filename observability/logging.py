@@ -80,11 +80,23 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(payload, default=str)
 
 
+class _StdoutHandler(logging.StreamHandler):  # type: ignore[type-arg]
+    """Writes to whatever sys.stdout is at emit time (works with redirection and test capture)."""
+
+    @property
+    def stream(self) -> Any:
+        return sys.stdout
+
+    @stream.setter
+    def stream(self, _: Any) -> None:
+        pass
+
+
 def get_logger(name: str, level: str = "INFO") -> logging.Logger:
     """Return a logger that writes one JSON object per line to stdout. Idempotent."""
     logger = logging.getLogger(name)
     if not any(isinstance(h.formatter, JsonFormatter) for h in logger.handlers):
-        handler = logging.StreamHandler(sys.stdout)
+        handler = _StdoutHandler()
         handler.setFormatter(JsonFormatter())
         logger.addHandler(handler)
     logger.setLevel(level)

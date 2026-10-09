@@ -1,0 +1,238 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "incident-runbook-agent remediation tools",
+    "version": "1.0.0",
+    "description": "Risky remediation tools."
+  },
+  "paths": {
+    "/restart_service": {
+      "post": {
+        "operationId": "restart_service",
+        "summary": "restart service",
+        "description": "RISKY. Rolling restart of one service. Requires an approval_token issued by a human approver for this service; without it the call is rejected. Use dry_run=true to check what would happen. Reuse the same request_id when retrying.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestartServiceInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tool result, or an error object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/RestartServiceOutput"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ToolError"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "x-requireConfirmation": "ENABLED"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RestartServiceInput": {
+        "additionalProperties": false,
+        "properties": {
+          "service": {
+            "description": "Service to restart, e.g. checkout-api.",
+            "pattern": "^[a-z][a-z0-9-]{1,40}$",
+            "title": "Service",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Why the restart is needed.",
+            "maxLength": 500,
+            "minLength": 10,
+            "title": "Reason",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "Idempotency key. Retries of the same action must reuse it.",
+            "pattern": "^[A-Za-z0-9_-]{8,64}$",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "approval_token": {
+            "anyOf": [
+              {
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Token from the human approval step.",
+            "title": "Approval Token"
+          },
+          "dry_run": {
+            "default": false,
+            "description": "Validate only; restart nothing.",
+            "title": "Dry Run",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "service",
+          "reason",
+          "request_id"
+        ],
+        "title": "RestartServiceInput",
+        "type": "object"
+      },
+      "RestartServiceOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "untrusted_content": {
+            "default": false,
+            "title": "Untrusted Content",
+            "type": "boolean"
+          },
+          "untrusted_flags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Untrusted Flags",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "restarted",
+              "dry_run",
+              "rejected"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "service": {
+            "title": "Service",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "reason_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Why it was rejected or would not execute (missing_token, expired, ...).",
+            "title": "Reason Code"
+          },
+          "would_execute": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Dry run only.",
+            "title": "Would Execute"
+          },
+          "approver": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Approver"
+          },
+          "idempotent_replay": {
+            "default": false,
+            "title": "Idempotent Replay",
+            "type": "boolean"
+          },
+          "simulated": {
+            "default": true,
+            "title": "Simulated",
+            "type": "boolean"
+          },
+          "audit_event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Audit Event Id"
+          }
+        },
+        "required": [
+          "status",
+          "service",
+          "request_id",
+          "message"
+        ],
+        "title": "RestartServiceOutput",
+        "type": "object"
+      },
+      "ToolError": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ToolErrorBody"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "title": "ToolError",
+        "type": "object"
+      },
+      "ToolErrorBody": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ToolErrorBody",
+        "type": "object"
+      }
+    }
+  }
+}

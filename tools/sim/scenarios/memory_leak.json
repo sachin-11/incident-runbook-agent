@@ -1,0 +1,33 @@
+{
+  "id": "memory_leak",
+  "description": "catalog-api leaks memory since 2.9.0 (unbounded in-process cache); pods OOMKilled every few hours.",
+  "services": {
+    "catalog-api": {
+      "health": {
+        "status": "degraded",
+        "ready_replicas": 3,
+        "desired_replicas": 3,
+        "checks": [
+          {"name": "readiness", "status": "passing"},
+          {"name": "memory", "status": "warning", "detail": "working set 93% of 1Gi limit"}
+        ],
+        "last_restart_minutes_ago": 47,
+        "notes": "Last State: Terminated, Reason: OOMKilled, Exit Code: 137"
+      },
+      "deploys": [
+        {"version": "2.9.0", "minutes_ago": 1380, "author": "ci-bot", "summary": "Add in-process product cache (no max size)", "status": "succeeded"},
+        {"version": "2.8.4", "minutes_ago": 10080, "author": "ci-bot", "summary": "Image resize fix", "status": "succeeded"}
+      ],
+      "logs": [
+        {"minutes_ago": 48, "level": "ERROR", "message": "java.lang.OutOfMemoryError: Java heap space"},
+        {"minutes_ago": 47, "level": "WARN", "message": "Container catalog-api OOMKilled (exit code 137), restarting"},
+        {"minutes_ago": 20, "level": "WARN", "message": "GC pause 1.8s (G1 Evacuation Pause)"},
+        {"minutes_ago": 5, "level": "WARN", "message": "GC pause 2.6s (G1 Evacuation Pause)"}
+      ],
+      "metrics": {
+        "memory_pct": {"since_minutes_ago": 1380, "value": 93, "shape": "ramp"},
+        "p99_latency_ms": {"since_minutes_ago": 60, "value": 900, "shape": "ramp"}
+      }
+    }
+  }
+}

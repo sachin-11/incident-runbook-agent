@@ -11,8 +11,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 Stage = Literal["dev", "staging", "prod"]
 
 
-class KbSettings(BaseSettings):
-    """What the CDK app and the KB scripts need. No agent model required."""
+class InfraSettings(BaseSettings):
+    """What the CDK app and the ops scripts need. No agent model required."""
 
     model_config = SettingsConfigDict(
         env_prefix="IRA_",
@@ -34,8 +34,13 @@ class KbSettings(BaseSettings):
     # Produced by KnowledgeBaseStack; scripts fall back to the stack outputs when unset.
     knowledge_base_id: str | None = Field(default=None, min_length=1)
 
+    # Lambda timeout for every tool. Lambda caps a single invocation at 900 s.
+    tool_timeout_s: float = Field(default=10.0, gt=0, le=900)
+    # Simulator scenario the tool Lambdas serve when a request does not pick one.
+    sim_scenario_id: str = Field(default="healthy", pattern=r"^[a-z0-9_]+$")
 
-class Settings(KbSettings):
+
+class Settings(InfraSettings):
     agent_model_id: str = Field(min_length=1)
 
     # Produced by AgentStack in a later module; unset until it is deployed.
@@ -47,8 +52,7 @@ class Settings(KbSettings):
     max_cost_usd_per_incident: float = Field(default=0.50, gt=0)
     monthly_budget_usd: float = Field(default=20.0, gt=0)
 
-    # Timeouts in seconds. Lambda caps a single invocation at 900 s.
-    tool_timeout_s: float = Field(default=10.0, gt=0, le=900)
+    # Seconds. Lambda caps a single invocation at 900 s.
     agent_timeout_s: float = Field(default=120.0, gt=0, le=900)
 
 
@@ -57,8 +61,8 @@ def load_settings() -> Settings:
     return Settings()
 
 
-def load_kb_settings(env_file: Path | None = None) -> KbSettings:
-    """KB/infra subset. Pass `env_file` when running outside the repo root (e.g. from infra/)."""
+def load_infra_settings(env_file: Path | None = None) -> InfraSettings:
+    """Infra/ops subset. Pass `env_file` when running outside the repo root (e.g. from infra/)."""
     if env_file is None:
-        return KbSettings()
-    return KbSettings(_env_file=env_file)
+        return InfraSettings()
+    return InfraSettings(_env_file=env_file)
