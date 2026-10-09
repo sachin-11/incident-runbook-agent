@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-018",
+    "doc_type": "runbook",
+    "title": "Third-party dependency outage and open circuit breaker (email provider)",
+    "service": "notification-svc",
+    "severity": "sev3",
+    "alert_names": [
+      "CircuitBreakerOpen",
+      "NotificationQueueAgeHigh",
+      "EmailProviderErrorRateHigh"
+    ]
+  }
+}

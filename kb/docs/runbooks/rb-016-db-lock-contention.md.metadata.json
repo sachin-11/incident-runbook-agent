@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-016",
+    "doc_type": "runbook",
+    "title": "Database lock contention and slow queries",
+    "service": "orders-db",
+    "severity": "sev2",
+    "alert_names": [
+      "DBLockWaitHigh",
+      "PostgresDeadlocksDetected",
+      "SlowQueryP95High"
+    ]
+  }
+}

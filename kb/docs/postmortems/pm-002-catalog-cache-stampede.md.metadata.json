@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "pm-002",
+    "doc_type": "postmortem",
+    "title": "Catalog slowdown after Redis failover caused cache stampede (2026-04-02)",
+    "service": "catalog-api",
+    "severity": "sev2",
+    "alert_names": [
+      "CacheHitRatioDrop",
+      "PostgresCPUHigh",
+      "RedisCPUHigh"
+    ]
+  }
+}

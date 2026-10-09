@@ -3,6 +3,78 @@
 > This project applies production-grade practices, but they are validated only on a simulated
 > environment. It has not been proven in production.
 
+## Module 2: Knowledge Base (blocked on a Bedrock quota, 2026-10-09)
+
+### Done
+- **Content:** 20 runbooks and 6 postmortems in `kb/docs/`, each with a `.md.metadata.json` file
+  holding `doc_id`, `doc_type`, `title`, `service`, `severity` and `alert_names`. They cover pod
+  crashloop, latency, DB connection exhaustion, OOM, bad deploy, disk full, cache stampede, queue
+  backlog, cert expiry, DNS, 5xx, third-party 429s, DynamoDB throttling, HPA maxed, replica lag,
+  lock contention, auth/JWKS, circuit breaker, feature flags and node NotReady.
+- **KnowledgeBaseStack:** a docs S3 bucket, an S3 Vectors bucket and index (1024 dims, cosine, Bedrock
+  text and metadata keys marked non-filterable), the Bedrock KB (Titan Text Embeddings V2, read from
+  `IRA_EMBEDDING_MODEL_ID`), and an S3 data source. The KB role is scoped to that model, the bucket
+  and the index.
+- **Chunking:** `kb/chunking.yaml` (v1: FIXED_SIZE, 300 tokens, 15% overlap), validated by
+  `infra/stacks/chunking.py`. The data source is named `docs-chunking-v<version>`, so changing the
+  chunking replaces it.
+- **Scripts:** `ingest_kb.py` (MD5-based sync with deletes, ingestion job, polling, and a check that
+  every doc was indexed), `query_kb.py` (top-k, scores, S3 citations, filters on service, severity,
+  doc type and alert) and `teardown.sh`. Makefile targets: `deploy-kb`, `ingest`, `query`,
+  `teardown-kb`.
+- **Config:** `KbSettings` is the subset of settings the infra and KB scripts need, so they run
+  without an agent model. `Settings` extends it.
+- **Tests:** 97 passing. They cover the doc template and metadata (sections in order, alert lists
+  match the metadata, metadata under 1 KB), chunking, the KB stack template, and the script helpers.
+
+### Acceptance checks
+- `cdk deploy`: done, now in **ap-south-1**. CDK was bootstrapped in 964775859218 for us-east-1
+  and ap-south-1. Outputs: `KnowledgeBaseId=JCKNXESBPP`, `DataSourceId=3C47ANWKBD`,
+  `DocsBucketName=ira-dev-knowledgebase-docsbucketecea003f-th2m4vqod4oe`, `ChunkingVersion=1`.
+  The first deploy in us-east-1 was torn down with `scripts/teardown.sh`.
+- `ingest_kb.py`: **blocked by Bedrock throttling on the account.** The S3 sync works (52 files).
+  `StartIngestionJob` fails with a 429 from Titan Text Embeddings V2.
+  - In us-east-1, Service Quotas shows 0 RPM and 0 TPM for every on-demand model.
+  - In ap-south-1 and eu-west-1, Service Quotas shows the normal 6000 RPM and 300K TPM, but in
+    practice only the first `invoke-model` call succeeds and every call after it is throttled.
+    That points to an undocumented new-account limit applied in every region, so switching
+    region does not fix it. It needs an AWS Support case.
+- The query checks (pods-restarting query and the 5-query miss analysis) are **pending** until
+  ingestion works.
+- pytest: passing (97 tests).
+
+### Vector store choice and cost
+- **S3 Vectors.** It is GA with Bedrock KB, has no idle cost and is billed per use. Rejected
+  OpenSearch Serverless because it has a fixed monthly OCU minimum of hundreds of dollars. Rejected
+  Aurora pgvector because it needs a cluster to run and more parts.
+- **Monthly estimate at this size** (26 docs, about 120 chunks, under 1 MB of vectors): under
+  $0.05. That covers S3 Vectors storage ($0.06/GB-month), PUTs ($0.20/GB), queries ($0.0025 per
+  1,000 plus data processed), Titan v2 embeddings (about $0.001 per full re-ingest; rate not
+  verified), and S3 standard for the docs (about $0).
+
+### Decisions
+- **The agent layer moves to Amazon Bedrock AgentCore (2026-10-09).** Runtime hosts a Strands
+  agent, Gateway exposes the Lambda tools, Policy (Cedar) enforces read-only use and approvals,
+  and Memory, Observability and Evaluations cover AgentOps. The KB design does not change. Docs
+  updated: `CLAUDE.md`, `README.md`, `docs/ARCHITECTURE.md`, and the `agent/`, `tools/` and
+  `infra/` READMEs. Nothing has been built for it yet; that starts in the agent module.
+- `ingest_kb.py` now retries a throttled `StartIngestionJob` with exponential backoff (15 s
+  doubling to 120 s, up to `--start-timeout`, default 600 s). The live run was still throttled
+  for all 10 minutes.
+- An account probe found 1 successful `invoke-model` call per region, then throttling for 30+
+  minutes. A trickle ingest (embed ourselves and write vectors directly) would take days, and
+  queries need embeddings too, so it was not pursued.
+
+### Known gaps
+- The Bedrock throttling (above) is the main blocker. It needs an AWS Support case to lift the limit on
+  this new account.
+- `numberOfDocumentsScanned` on a re-ingest with no changes hasn't been verified yet. The success
+  check may need adjusting after the first real run.
+- The deployed KB costs about $0 while idle. Remove it with `scripts/teardown.sh` if needed.
+
+### Next
+- Once quotas are raised: run `make ingest`, run the query checks, record the retrieval results here.
+
 ## Module 1: Foundation (done, 2026-10-09)
 
 Builds on Module 0. No AWS resources are created.

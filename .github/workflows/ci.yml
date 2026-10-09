@@ -29,6 +29,10 @@ jobs:
   cdk-synth:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      # Synth only: no credentials, nothing is deployed.
+      IRA_AWS_REGION: us-east-1
+      IRA_EMBEDDING_MODEL_ID: amazon.titan-embed-text-v2:0
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6

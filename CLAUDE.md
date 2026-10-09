@@ -5,13 +5,31 @@
 
 ## Project
 
-Incident Runbook Agent: an AI agent on AWS (Amazon Bedrock) that, when an alert arrives,
+Incident Runbook Agent: an AI agent on AWS, hosted on Amazon Bedrock AgentCore. When an alert
+arrives, it
 1. retrieves relevant runbooks and postmortems from a Bedrock Knowledge Base and cites them,
-2. runs safe, read-only diagnostics through action-group Lambdas (logs, health, deploys, metrics),
-3. proposes a fix and asks a human for approval (return of control) before any risky action.
+2. runs safe, read-only diagnostics through Lambda tools behind AgentCore Gateway (logs, health,
+   deploys, metrics),
+3. proposes a fix and asks a human for approval before any risky action. AgentCore Policy enforces
+   this at the Gateway.
 
-The AgentOps layer covers tracing, evals with a CI gate, guardrails, cost and latency tracking,
-versioning, a feedback loop and a weekly KB gap report.
+The AgentOps layer covers tracing (AgentCore Observability), evals with a CI gate (RAGAS and
+AgentCore Evaluations), guardrails (AgentCore Policy), cost and latency tracking, versioning, a
+feedback loop (AgentCore Memory) and a weekly KB gap report.
+
+## Platform decision (2026-10-09)
+
+The agent layer uses **AgentCore**, not Bedrock Agents:
+- **Runtime** hosts a Strands Agents (Python) agent. The framework and model are our choice.
+- **Gateway** exposes the `tools/` Lambdas as MCP tools.
+- **Policy** (Cedar) enforces read-only tools and blocks state-changing tools unless a matching
+  approval exists. This replaces Bedrock return-of-control.
+- **Memory** keeps incident history.
+- **Observability** sends OTel traces to CloudWatch.
+- **Evaluations** scores agent quality, alongside the RAGAS CI gate.
+
+The Knowledge Base (Module 2) does not change. The agent reads it through a retrieve tool.
+AgentCore still calls models through Bedrock, so the account's Bedrock quotas apply to it too.
 
 Scope: production-grade practices, validated only on a simulated environment with chaos-injected
 failures. Never claim it is proven in production.
@@ -20,11 +38,11 @@ failures. Never claim it is proven in production.
 
 | Dir | Purpose |
 |---|---|
-| `agent/` | Agent config, orchestration, return-of-control handling |
-| `tools/` | Action-group Lambdas (typed, read-only diagnostics) |
+| `agent/` | Settings, and the Strands agent that AgentCore Runtime hosts (approval flow) |
+| `tools/` | Lambda tools behind AgentCore Gateway (typed, read-only diagnostics) |
 | `kb/` | Runbooks / postmortems source docs |
 | `evals/` | RAGAS + custom evals, CI gate |
-| `infra/` | AWS CDK (Python): KnowledgeBase, Tools, Agent, Observability stacks |
+| `infra/` | AWS CDK (Python): KnowledgeBase, Tools, Agent (AgentCore), Observability stacks |
 | `observability/` | Logging, tracing, cost/latency |
 | `scripts/` | Ops scripts (verify access, teardown, reports) |
 | `tests/` | Unit tests |

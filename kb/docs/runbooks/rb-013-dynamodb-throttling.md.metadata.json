@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-013",
+    "doc_type": "runbook",
+    "title": "DynamoDB throttling (inventory-svc)",
+    "service": "inventory-svc",
+    "severity": "sev2",
+    "alert_names": [
+      "DynamoDBThrottledRequests",
+      "DynamoDBWriteThrottleEvents",
+      "InventoryReservationLatencyHigh"
+    ]
+  }
+}

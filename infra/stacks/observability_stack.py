@@ -1,4 +1,4 @@
-"""Dashboards, alarms, cost and latency tracking. Empty for now."""
+"""AgentCore Observability wiring, dashboards, alarms, cost and latency tracking. Empty."""
 
 from __future__ import annotations
 

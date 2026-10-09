@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-001",
+    "doc_type": "runbook",
+    "title": "Pods in CrashLoopBackOff (container keeps restarting)",
+    "service": "platform",
+    "severity": "sev2",
+    "alert_names": [
+      "KubePodCrashLooping",
+      "KubeDeploymentReplicasMismatch",
+      "KubeDeploymentRolloutStuck"
+    ]
+  }
+}

@@ -1,13 +1,17 @@
 # Incident Runbook Agent
 
-An AI agent on AWS that helps handle service incidents. When an alert arrives it:
+An AI agent on AWS that helps handle service incidents. It runs on **Amazon Bedrock AgentCore**.
+When an alert arrives it:
 
 1. Retrieves relevant runbooks and postmortems from an Amazon Bedrock Knowledge Base and cites them.
-2. Runs safe, read-only diagnostics through action-group Lambdas (logs, health, deploys, metrics).
-3. Proposes a fix and asks a human for approval (Bedrock return-of-control) before any risky action.
+2. Runs safe, read-only diagnostics: Lambda tools (logs, health, deploys, metrics) exposed through
+   AgentCore Gateway.
+3. Proposes a fix and asks a human for approval before any risky action. AgentCore Policy blocks
+   state-changing tools that have not been approved.
 
-The AgentOps layer covers tracing, evals with a CI gate, guardrails, cost and latency tracking,
-versioning, a feedback loop and a weekly KB gap report.
+The AgentOps layer covers tracing (AgentCore Observability), evals with a CI gate (RAGAS and
+AgentCore Evaluations), guardrails (AgentCore Policy), cost and latency tracking, versioning, a
+feedback loop (AgentCore Memory) and a weekly KB gap report.
 
 > **Scope:** this project applies production-grade practices, but they are validated only on a
 > simulated environment with chaos-injected failures. It has not been proven in production.
@@ -25,8 +29,8 @@ uv run python scripts/verify_model_access.py   # checks Bedrock model access (ne
 
 | Dir | Purpose |
 |---|---|
-| `agent/` | Agent config, orchestration, return-of-control handling |
-| `tools/` | Action-group Lambdas (typed, read-only diagnostics) |
+| `agent/` | Settings, and the Strands agent that AgentCore Runtime hosts (approval flow) |
+| `tools/` | Lambda tools behind AgentCore Gateway (typed, read-only diagnostics) |
 | `kb/` | Runbooks / postmortems source docs |
 | `evals/` | RAGAS + custom evals, CI gate |
 | `infra/` | AWS CDK (Python) |

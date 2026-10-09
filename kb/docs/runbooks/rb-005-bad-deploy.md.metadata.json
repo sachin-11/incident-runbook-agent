@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-005",
+    "doc_type": "runbook",
+    "title": "Bad deploy (error or latency regression right after a release)",
+    "service": "platform",
+    "severity": "sev2",
+    "alert_names": [
+      "DeployErrorRateRegression",
+      "CanaryAnalysisFailed",
+      "KubeDeploymentRolloutStuck"
+    ]
+  }
+}

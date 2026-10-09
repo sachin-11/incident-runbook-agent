@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "pm-006",
+    "doc_type": "postmortem",
+    "title": "Intermittent DNS failures from conntrack exhaustion (2026-08-30)",
+    "service": "platform",
+    "severity": "sev1",
+    "alert_names": [
+      "CoreDNSErrorsHigh",
+      "NodeConntrackTableFull",
+      "CoreDNSLatencyHigh"
+    ]
+  }
+}

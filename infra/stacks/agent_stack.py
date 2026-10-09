@@ -1,4 +1,4 @@
-"""Bedrock Agent, alias, action groups and guardrails. Empty for now."""
+"""AgentCore Runtime (Strands agent), Gateway with Lambda tool targets, Policy, Memory. Empty."""
 
 from __future__ import annotations
 

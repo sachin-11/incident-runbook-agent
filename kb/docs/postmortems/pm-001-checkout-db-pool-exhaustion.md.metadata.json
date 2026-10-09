@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "pm-001",
+    "doc_type": "postmortem",
+    "title": "Checkout outage from orders-db connection exhaustion (2026-03-14)",
+    "service": "checkout-api",
+    "severity": "sev1",
+    "alert_names": [
+      "DBConnectionPoolExhausted",
+      "PostgresTooManyConnections",
+      "CheckoutErrorRateHigh"
+    ]
+  }
+}

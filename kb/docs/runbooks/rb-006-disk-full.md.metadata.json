@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-006",
+    "doc_type": "runbook",
+    "title": "Disk full (node ephemeral storage or database volume)",
+    "service": "platform",
+    "severity": "sev2",
+    "alert_names": [
+      "NodeDiskPressure",
+      "DiskUsageCritical",
+      "RDSFreeStorageSpaceLow"
+    ]
+  }
+}

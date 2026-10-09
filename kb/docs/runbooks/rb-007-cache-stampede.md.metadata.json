@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-007",
+    "doc_type": "runbook",
+    "title": "Cache stampede (thundering herd on Redis miss)",
+    "service": "catalog-api",
+    "severity": "sev2",
+    "alert_names": [
+      "CacheHitRatioDrop",
+      "RedisCPUHigh",
+      "PostgresCPUHigh"
+    ]
+  }
+}

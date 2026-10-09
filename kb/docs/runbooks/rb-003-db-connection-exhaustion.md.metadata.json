@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-003",
+    "doc_type": "runbook",
+    "title": "Database connection pool exhaustion (Postgres orders-db)",
+    "service": "orders-db",
+    "severity": "sev1",
+    "alert_names": [
+      "DBConnectionPoolExhausted",
+      "PostgresTooManyConnections",
+      "HikariPendingThreadsHigh"
+    ]
+  }
+}

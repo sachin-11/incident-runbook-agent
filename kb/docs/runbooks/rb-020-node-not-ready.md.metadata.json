@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-020",
+    "doc_type": "runbook",
+    "title": "Kubernetes node NotReady",
+    "service": "platform",
+    "severity": "sev2",
+    "alert_names": [
+      "KubeNodeNotReady",
+      "EC2InstanceStatusCheckFailed",
+      "KubePodsPendingInsufficientCPU"
+    ]
+  }
+}

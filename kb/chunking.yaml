@@ -1,0 +1,27 @@
+# Chunking config for the KB data source, read by infra/stacks/chunking.py at synth time.
+#
+# Bedrock cannot change chunking on an existing data source. Any change here MUST bump `version`:
+# the data source name includes it, so CDK replaces the data source, and you re-run
+# scripts/ingest_kb.py. Record each version's retrieval results in docs/PROGRESS.md.
+#
+# strategy: FIXED_SIZE | HIERARCHICAL | SEMANTIC | NONE
+version: 1
+strategy: FIXED_SIZE
+
+# Runbook sections are 80-250 tokens. 300 tokens keeps the title + Symptoms of each doc together in
+# the first chunk, which is what most alert-style queries match.
+fixed_size:
+  max_tokens: 300
+  overlap_percentage: 15
+
+# Used only when strategy is HIERARCHICAL.
+hierarchical:
+  parent_max_tokens: 1500
+  child_max_tokens: 300
+  overlap_tokens: 60
+
+# Used only when strategy is SEMANTIC.
+semantic:
+  max_tokens: 300
+  buffer_size: 1
+  breakpoint_percentile_threshold: 95

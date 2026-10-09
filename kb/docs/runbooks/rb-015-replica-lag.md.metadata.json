@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-015",
+    "doc_type": "runbook",
+    "title": "Postgres read replica lag",
+    "service": "orders-db",
+    "severity": "sev3",
+    "alert_names": [
+      "ReplicaLagHigh",
+      "PostgresReplayDelayHigh",
+      "RDSReadReplicaLag"
+    ]
+  }
+}

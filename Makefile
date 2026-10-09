@@ -1,4 +1,4 @@
-.PHONY: help install lint typecheck test format synth precommit check
+.PHONY: help install lint typecheck test format synth precommit check deploy-kb ingest query teardown-kb
 
 help:  ## List targets
 	@grep -E "^[a-z-]+:.*##" $(MAKEFILE_LIST) | sed -E "s/:.*## /\t/"
@@ -23,6 +23,18 @@ format:  ## Auto-fix lint issues and format
 
 synth:  ## cdk synth (needs Node; no AWS credentials)
 	cd infra && npx --yes aws-cdk@2 synth --quiet
+
+deploy-kb:  ## Deploy the KnowledgeBase stack (creates AWS resources)
+	cd infra && npx --yes aws-cdk@2 deploy Ira-$${IRA_STAGE:-dev}-KnowledgeBase --exclusively --require-approval never
+
+ingest:  ## Sync kb/docs to S3 and run a KB ingestion job
+	uv run python scripts/ingest_kb.py
+
+query:  ## make query Q="pods restarting after deploy"
+	uv run python scripts/query_kb.py "$(Q)"
+
+teardown-kb:  ## Destroy the KnowledgeBase stack
+	bash scripts/teardown.sh
 
 precommit:  ## Run every pre-commit hook on all files
 	uv run pre-commit run --all-files

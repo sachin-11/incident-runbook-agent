@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-017",
+    "doc_type": "runbook",
+    "title": "Auth token validation failures (401s across services)",
+    "service": "auth-svc",
+    "severity": "sev1",
+    "alert_names": [
+      "AuthTokenValidationFailures",
+      "Http401RateHigh",
+      "NodeClockSkewHigh"
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "pm-003",
+    "doc_type": "postmortem",
+    "title": "Expired internal mTLS certificate broke checkout to payments (2026-05-19)",
+    "service": "payments-svc",
+    "severity": "sev1",
+    "alert_names": [
+      "TLSCertExpired",
+      "CertManagerCertificateNotReady",
+      "PaymentAuthFailureRateHigh"
+    ]
+  }
+}

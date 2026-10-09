@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-009",
+    "doc_type": "runbook",
+    "title": "TLS certificate expiring or expired",
+    "service": "api-gateway",
+    "severity": "sev1",
+    "alert_names": [
+      "TLSCertExpiringSoon",
+      "TLSCertExpired",
+      "CertManagerCertificateNotReady"
+    ]
+  }
+}

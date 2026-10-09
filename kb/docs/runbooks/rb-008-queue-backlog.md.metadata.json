@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-008",
+    "doc_type": "runbook",
+    "title": "SQS queue backlog (orders-worker falling behind)",
+    "service": "orders-worker",
+    "severity": "sev2",
+    "alert_names": [
+      "SQSQueueAgeHigh",
+      "SQSQueueDepthHigh",
+      "DLQMessagesVisible"
+    ]
+  }
+}

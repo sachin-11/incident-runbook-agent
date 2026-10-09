@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-014",
+    "doc_type": "runbook",
+    "title": "CPU saturation with HPA at max replicas (search-svc)",
+    "service": "search-svc",
+    "severity": "sev3",
+    "alert_names": [
+      "HPAMaxReplicas",
+      "CPUThrottlingHigh",
+      "KubePodsPendingInsufficientCPU"
+    ]
+  }
+}

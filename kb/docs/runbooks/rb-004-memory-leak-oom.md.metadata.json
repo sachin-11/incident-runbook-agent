@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-004",
+    "doc_type": "runbook",
+    "title": "Memory leak and OOMKilled containers (catalog-api)",
+    "service": "catalog-api",
+    "severity": "sev3",
+    "alert_names": [
+      "ContainerOOMKilled",
+      "ContainerMemoryNearLimit",
+      "JvmGcTimeHigh"
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-011",
+    "doc_type": "runbook",
+    "title": "5xx error spike at the edge (ALB / API gateway)",
+    "service": "api-gateway",
+    "severity": "sev1",
+    "alert_names": [
+      "ALB5xxSpike",
+      "GatewayErrorRateHigh",
+      "TargetGroupUnhealthyHosts"
+    ]
+  }
+}

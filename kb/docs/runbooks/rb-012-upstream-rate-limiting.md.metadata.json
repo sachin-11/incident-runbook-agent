@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-012",
+    "doc_type": "runbook",
+    "title": "Third-party API rate limiting (payment provider returns 429)",
+    "service": "payments-svc",
+    "severity": "sev1",
+    "alert_names": [
+      "UpstreamThrottling",
+      "PaymentAuthFailureRateHigh",
+      "OutboundRetryRateHigh"
+    ]
+  }
+}

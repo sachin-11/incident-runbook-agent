@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-002",
+    "doc_type": "runbook",
+    "title": "High p99 latency on checkout-api",
+    "service": "checkout-api",
+    "severity": "sev2",
+    "alert_names": [
+      "HighP99Latency",
+      "CheckoutLatencySLOBurn",
+      "GatewayUpstreamTimeout"
+    ]
+  }
+}

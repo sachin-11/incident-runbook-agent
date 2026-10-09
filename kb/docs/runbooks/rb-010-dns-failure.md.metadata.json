@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-010",
+    "doc_type": "runbook",
+    "title": "DNS resolution failures (CoreDNS / Route 53)",
+    "service": "platform",
+    "severity": "sev1",
+    "alert_names": [
+      "CoreDNSErrorsHigh",
+      "CoreDNSLatencyHigh",
+      "NodeConntrackTableFull"
+    ]
+  }
+}

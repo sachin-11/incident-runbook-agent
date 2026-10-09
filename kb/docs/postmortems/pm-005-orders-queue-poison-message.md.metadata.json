@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "pm-005",
+    "doc_type": "postmortem",
+    "title": "Order fulfilment delayed by a poison message in the orders queue (2026-07-21)",
+    "service": "orders-worker",
+    "severity": "sev2",
+    "alert_names": [
+      "SQSQueueAgeHigh",
+      "SQSQueueDepthHigh",
+      "DLQMessagesVisible"
+    ]
+  }
+}

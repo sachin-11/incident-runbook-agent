@@ -1,0 +1,14 @@
+{
+  "metadataAttributes": {
+    "doc_id": "rb-019",
+    "doc_type": "runbook",
+    "title": "Feature flag or runtime config misconfiguration",
+    "service": "platform",
+    "severity": "sev2",
+    "alert_names": [
+      "FeatureFlagErrorSpike",
+      "ConfigParseErrors",
+      "CheckoutErrorRateHigh"
+    ]
+  }
+}

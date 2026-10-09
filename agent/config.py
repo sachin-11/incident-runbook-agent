@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field
@@ -10,7 +11,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 Stage = Literal["dev", "staging", "prod"]
 
 
-class Settings(BaseSettings):
+class KbSettings(BaseSettings):
+    """What the CDK app and the KB scripts need. No agent model required."""
+
     model_config = SettingsConfigDict(
         env_prefix="IRA_",
         env_file=".env",
@@ -21,16 +24,23 @@ class Settings(BaseSettings):
 
     # AWS and models: required, no defaults in code.
     aws_region: str = Field(min_length=1)
-    agent_model_id: str = Field(min_length=1)
     embedding_model_id: str = Field(min_length=1)
-
-    # Produced by the CDK stacks in later modules; unset until they are deployed.
-    knowledge_base_id: str | None = Field(default=None, min_length=1)
-    agent_id: str | None = Field(default=None, min_length=1)
-    agent_alias_id: str | None = Field(default=None, min_length=1)
+    # Must be a size the embedding model supports (Titan Text v2: 256, 512 or 1024).
+    embedding_dimensions: int = Field(default=1024, gt=0)
 
     stage: Stage = "dev"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+
+    # Produced by KnowledgeBaseStack; scripts fall back to the stack outputs when unset.
+    knowledge_base_id: str | None = Field(default=None, min_length=1)
+
+
+class Settings(KbSettings):
+    agent_model_id: str = Field(min_length=1)
+
+    # Produced by AgentStack in a later module; unset until it is deployed.
+    agent_id: str | None = Field(default=None, min_length=1)
+    agent_alias_id: str | None = Field(default=None, min_length=1)
 
     # Budget caps, enforced per incident and per month.
     max_tokens_per_incident: int = Field(default=50_000, gt=0)
@@ -45,3 +55,10 @@ class Settings(BaseSettings):
 def load_settings() -> Settings:
     """Load settings from env / .env; raises pydantic.ValidationError if incomplete."""
     return Settings()
+
+
+def load_kb_settings(env_file: Path | None = None) -> KbSettings:
+    """KB/infra subset. Pass `env_file` when running outside the repo root (e.g. from infra/)."""
+    if env_file is None:
+        return KbSettings()
+    return KbSettings(_env_file=env_file)
